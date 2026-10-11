@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Study Streak">
+<meta name="theme-color" content="#11141b">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Study Streak</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one-thumb phone app — header with goal top-right, two tabs (Today / Calendar) switched by a fixed bottom bar; sheets slide up for edits */
+:root{
+  --bg:#11141b; --surface:#1a1e28; --surface-2:#232835; --line:#2c3242;
+  --fg:#ecebe6; --muted:#8b91a1; --gold:#e8b44c; --gold-soft:rgba(232,180,76,.18);
+  --gold-ink:#2a1f08; --tint:#2b3a52; --danger:#e0776a;
+  --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body:"Manrope", -apple-system, "Segoe UI", system-ui, sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.app{max-width:480px;margin:0 auto;padding-inline:16px;padding-block:8px 110px;display:flex;flex-direction:column;gap:20px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:8px}
+.streak-mini{display:flex;align-items:center;gap:6px;font-family:var(--display);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums}
+.streak-mini svg{width:20px;height:20px}
+.flame{fill:var(--muted)}
+.lit .flame{fill:var(--gold)}
+.goal-btn{display:flex;flex-direction:column;align-items:flex-end;padding:6px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
+.goal-btn small{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.goal-btn b{font-family:var(--display);font-size:18px;font-variant-numeric:tabular-nums}
+.ring-wrap{position:relative;width:min(78vw,300px);aspect-ratio:1;max-width:100%;margin:8px auto 0}
+.ring-wrap svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:var(--surface-2);stroke-width:14}
+.ring-fg{fill:none;stroke:var(--fg);stroke-width:14;stroke-linecap:round;transition:stroke-dashoffset .6s ease,stroke .4s}
+.done .ring-fg{stroke:var(--gold)}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center}
+.clock{font-family:var(--display);font-weight:500;font-size:clamp(40px,13vw,58px);letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1}
+.ring-label{font-size:13px;color:var(--muted)}
+.done .ring-label{color:var(--gold);font-weight:600}
+.done .ring-wrap{animation:glow 1.2s ease-out 1}
+@keyframes glow{0%{filter:drop-shadow(0 0 0 transparent)}40%{filter:drop-shadow(0 0 24px rgba(232,180,76,.55))}100%{filter:drop-shadow(0 0 0 transparent)}}
+.start{display:block;width:100%;padding:18px;border-radius:18px;font-family:var(--display);font-weight:700;font-size:20px;background:var(--fg);color:var(--bg)}
+.start.running{background:var(--surface-2);color:var(--fg);border:1px solid var(--line)}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+h2{font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0}
+.link{color:var(--gold);font-weight:600;font-size:14px;padding:6px 0}
+.list{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.item span{color:var(--muted);font-size:14px}
+.item b{font-weight:600}
+.del{font-size:13px;color:var(--muted);padding:6px 8px;border-radius:8px}
+.del[data-arm]{color:var(--bg);background:var(--danger)}
+.empty{color:var(--muted);font-size:14px;padding:12px 0}
+/* calendar */
+.big-streak{display:flex;align-items:center;gap:16px;padding:20px;border-radius:20px;background:var(--surface)}
+.big-streak svg{width:44px;height:44px;flex:none}
+.big-streak .n{font-family:var(--display);font-weight:700;font-size:44px;line-height:1;font-variant-numeric:tabular-nums}
+.big-streak .t{color:var(--muted);font-size:14px;margin-top:4px}
+.month-nav{display:flex;align-items:center;justify-content:space-between}
+.month-nav b{font-family:var(--display);font-size:20px;font-weight:700}
+.arrow{width:40px;height:40px;border-radius:12px;background:var(--surface);font-size:18px}
+.arrow:disabled{opacity:.3}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.dow{font-size:11px;text-align:center;color:var(--muted);letter-spacing:.08em;padding-bottom:4px}
+.day{aspect-ratio:1;max-width:100%;border-radius:12px;background:var(--surface);font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:center;position:relative}
+.day.part{background:var(--tint)}
+.day.gold{background:var(--gold);color:var(--gold-ink)}
+.day.today{box-shadow:inset 0 0 0 2px var(--fg)}
+.day.gold.today{box-shadow:inset 0 0 0 2px var(--gold-ink)}
+.day.future{opacity:.35}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.summary{font-size:14px;color:var(--muted)}
+.summary b{color:var(--fg)}
+.backup-btn{align-self:flex-start;font-size:14px;color:var(--muted);padding:8px 0;text-decoration:underline;text-underline-offset:3px}
+/* tabbar */
+.tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:8px;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(17,20,27,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);z-index:5}
+.tab{flex:1;max-width:220px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px;border-radius:12px;color:var(--muted);font-size:12px;font-weight:600}
+.tab svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tab[aria-selected="true"]{color:var(--fg);background:var(--surface)}
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10;display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:480px;max-height:88%;overflow:auto;background:var(--surface);border-radius:22px 22px 0 0;padding:20px 16px calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px;animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(30px);opacity:0}}
+.sheet h3{font-family:var(--display);font-size:22px;margin:0;text-wrap:balance}
+.sheet p{margin:0;color:var(--muted);font-size:14px;line-height:1.5}
+.hm{display:flex;gap:10px;align-items:center}
+.hm label{flex:1;display:flex;align-items:center;gap:8px;background:var(--surface-2);border-radius:12px;padding:4px 12px;border:1px solid var(--line)}
+.hm input{width:100%;min-width:0;background:none;border:0;color:var(--fg);font:600 22px var(--display);padding:10px 0;font-variant-numeric:tabular-nums}
+.hm span{color:var(--muted);font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:8px 14px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);font-weight:600;font-size:14px}
+.primary{padding:14px;border-radius:14px;background:var(--gold);color:var(--gold-ink);font-weight:700;font-size:16px}
+.primary[data-arm]{background:var(--danger);color:var(--bg)}
+.secondary{padding:12px;border-radius:14px;background:var(--surface-2);font-weight:600}
+textarea{width:100%;min-height:90px;background:var(--surface-2);color:var(--fg);border:1px solid var(--line);border-radius:12px;padding:10px;font:12px ui-monospace,Menlo,monospace;resize:vertical}
+.note{font-size:13px;color:var(--gold);min-height:1em}
+.stat-line{font-family:var(--display);font-size:28px;font-weight:700;font-variant-numeric:tabular-nums}
+.stat-line span{font-size:16px;color:var(--muted);font-weight:500}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+
+<style>
+html{-webkit-text-size-adjust:100%}
+:root{padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;font-size:14px;-webkit-user-select:none;user-select:none;overscroll-behavior:none}
+input,textarea{-webkit-user-select:text;user-select:text}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="streak-mini" id="miniStreak" aria-label="Current streak">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path class="flame" d="M12 2c.6 3.2-1.2 5.1-2.8 6.9C7.6 10.6 6 12.4 6 15a6 6 0 0 0 12 0c0-2.4-1-4.2-2.2-5.6-.3 1.4-1 2.4-2.1 2.9.6-3.7-.2-7.6-1.7-10.3z"/></svg>
+      <span id="miniN">0</span>
+    </div>
+    <button class="goal-btn" id="goalBtn" aria-label="Change daily goal"><small>Daily goal</small><b id="goalTxt">2h</b></button>
+  </header>
+
+  <main id="pageToday">
+    <div style="display:flex;flex-direction:column;gap:22px" id="todayWrap">
+      <div class="ring-wrap">
+        <svg viewBox="0 0 260 260" aria-hidden="true"><circle class="ring-bg" cx="130" cy="130" r="112"/><circle class="ring-fg" id="ring" cx="130" cy="130" r="112"/></svg>
+        <div class="ring-center"><div class="clock" id="clock">0:00:00</div><div class="ring-label" id="ringLabel">of 2h today</div></div>
+      </div>
+      <button class="start" id="startBtn">Start</button>
+      <section style="display:flex;flex-direction:column;gap:8px">
+        <div class="row"><h2>Today's sessions</h2><button class="link" id="addToday">+ Add time</button></div>
+        <div class="list" id="todayList"></div>
+      </section>
+    </div>
+  </main>
+
+  <main id="pageCal" hidden>
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div class="big-streak" id="bigStreak">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path class="flame" d="M12 2c.6 3.2-1.2 5.1-2.8 6.9C7.6 10.6 6 12.4 6 15a6 6 0 0 0 12 0c0-2.4-1-4.2-2.2-5.6-.3 1.4-1 2.4-2.1 2.9.6-3.7-.2-7.6-1.7-10.3z"/></svg>
+        <div><div class="n" id="bigN">0</div><div class="t" id="bigT">day streak</div></div>
+      </div>
+      <div class="month-nav">
+        <button class="arrow" id="prevM" aria-label="Previous month">‹</button>
+        <b id="monthTitle">October 2026</b>
+        <button class="arrow" id="nextM" aria-label="Next month">›</button>
+      </div>
+      <div class="grid" id="grid"></div>
+      <div class="legend"><span><i style="background:var(--gold)"></i>Goal reached</span><span><i style="background:var(--tint)"></i>Studied</span></div>
+      <div class="summary" id="monthSum"></div>
+      <button class="backup-btn" id="backupBtn">Backup &amp; restore</button>
+    </div>
+  </main>
+</div>
+
+<nav class="tabbar" role="tablist">
+  <button class="tab" role="tab" id="tabToday" aria-selected="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M10 2h4"/></svg>Today</button>
+  <button class="tab" role="tab" id="tabCal" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Calendar</button>
+</nav>
+
+<div class="scrim" id="scrim" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+
+<script>
+const KEY='studyStreak.v1';
+const $=id=>document.getElementById(id);
+const pad=n=>String(n).padStart(2,'0');
+const key=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const parse=k=>{const[y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d)};
+const addDays=(k,n)=>{const d=parse(k);d.setDate(d.getDate()+n);return key(d)};
+const todayK=()=>key(new Date());
+
+function fresh(){return{goals:[{from:'2000-01-01',min:120}],days:{},running:null}}
+function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);if(o&&o.days&&o.goals)return o}}catch(e){}return fresh()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+let S=load();
+
+/* ---- logic ---- */
+function goalFor(k){let g=S.goals[0].min;for(const x of S.goals)if(x.from<=k)g=x.min;return g}
+function setGoal(min){const t=todayK();S.goals=S.goals.filter(x=>x.from<t);S.goals.push({from:t,min});save()}
+function split(a,b){const out={};let t=a;while(t<b){const d=new Date(t);const next=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1).getTime();const e=Math.min(b,next);out[key(d)]=(out[key(d)]||[]).concat([[t,e]]);t=e}return out}
+function storedSec(k){const d=S.days[k];return d?d.sessions.reduce((s,x)=>s+x.sec,0):0}
+function liveSec(k){let s=storedSec(k);if(S.running){const p=split(S.running,Date.now())[k];if(p)p.forEach(([a,b])=>s+=(b-a)/1000)}return s}
+function hit(k){const g=goalFor(k);return g>0&&liveSec(k)>=g*60}
+function streak(){const t=todayK();let d=hit(t)?t:addDays(t,-1),n=0;while(hit(d)){n++;d=addDays(d,-1)}return n}
+function addSession(k,s){(S.days[k]=S.days[k]||{sessions:[]}).sessions.push(s)}
+function start(){S.running=Date.now();save();lockOn()}
+function stop(){const now=Date.now();const parts=split(S.running,now);for(const k in parts)parts[k].forEach(([a,b])=>{const sec=Math.round((b-a)/1000);if(sec>=1)addSession(k,{start:a,end:b,sec})});S.running=null;save();lockOff()}
+
+/* ---- formatting ---- */
+const fmtClock=s=>{s=Math.floor(s);return Math.floor(s/3600)+':'+pad(Math.floor(s%3600/60))+':'+pad(s%60)};
+const fmtShort=s=>{const m=Math.round(s/60);const h=Math.floor(m/60),r=m%60;return h?(r?h+'h '+pad(r)+'m':h+'h'):m+'m'};
+const fmtGoal=min=>fmtShort(min*60);
+const fmtTime=t=>{const d=new Date(t);return pad(d.getHours())+':'+pad(d.getMinutes())};
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+/* ---- render ---- */
+const C=2*Math.PI*112;$('ring').style.strokeDasharray=C;
+let lastHit=null;
+function renderTop(){const n=streak();$('miniN').textContent=n;$('miniStreak').classList.toggle('lit',hit(todayK()));$('goalTxt').textContent=fmtGoal(goalFor(todayK()))}
+function renderClock(){
+  const k=todayK(),sec=liveSec(k),g=goalFor(k)*60,done=g>0&&sec>=g;
+  $('clock').textContent=fmtClock(sec);
+  $('ring').style.strokeDashoffset=C*(1-Math.min(1,g?sec/g:0));
+  $('ringLabel').textContent=done?'Goal reached':(g?fmtShort(Math.max(0,g-sec))+' to go':'No goal set');
+  $('todayWrap').classList.toggle('done',done);
+  if(lastHit!==null&&done!==lastHit){renderAll();}
+  lastHit=done;
+}
+function sessionRows(k,listEl){
+  const d=S.days[k];listEl.innerHTML='';
+  if(!d||!d.sessions.length){listEl.innerHTML='<div class="empty">'+(k===todayK()?'No sessions yet. Tap Start when you begin studying.':'No study time logged.')+'</div>';return}
+  d.sessions.forEach((s,i)=>{const r=document.createElement('div');r.className='item';
+    r.innerHTML='<div><b>'+fmtShort(s.sec)+'</b> <span>'+(s.manual?'Added by hand':fmtTime(s.start)+'–'+fmtTime(s.end))+'</span></div>';
+    const b=document.createElement('button');b.className='del';b.textContent='Remove';
+    b.onclick=()=>{if(!b.dataset.arm){b.dataset.arm=1;b.textContent='Confirm';setTimeout(()=>{if(b.isConnected){delete b.dataset.arm;b.textContent='Remove'}},3000);return}
+      d.sessions.splice(i,1);save();renderAll();if(!$('scrim').hidden&&openDay)showDay(openDay)};
+    r.appendChild(b);listEl.appendChild(r)});
+  if(S.running&&k===todayK()){const r=document.createElement('div');r.className='item';r.innerHTML='<div><b>Running</b> <span>since '+fmtTime(S.running)+'</span></div>';listEl.appendChild(r)}
+}
+let vy=new Date().getFullYear(),vm=new Date().getMonth();
+function renderCal(){
+  const n=streak();$('bigN').textContent=n;$('bigT').textContent=n===1?'day streak':'day streak';
+  $('bigStreak').classList.toggle('lit',n>0);
+  $('monthTitle').textContent=MONTHS[vm]+' '+vy;
+  const now=new Date();$('nextM').disabled=(vy>now.getFullYear()||(vy===now.getFullYear()&&vm>=now.getMonth()));
+  const g=$('grid');g.innerHTML='';['Mo','Tu','We','Th','Fr','Sa','Su'].forEach(x=>{const e=document.createElement('div');e.className='dow';e.textContent=x;g.appendChild(e)});
+  const first=new Date(vy,vm,1),lead=(first.getDay()+6)%7,dim=new Date(vy,vm+1,0).getDate(),t=todayK();
+  for(let i=0;i<lead;i++)g.appendChild(document.createElement('div'));
+  let gold=0,tot=0;
+  for(let d=1;d<=dim;d++){const k=key(new Date(vy,vm,d)),sec=liveSec(k),b=document.createElement('button');b.className='day';b.textContent=d;
+    if(k>t)b.classList.add('future');else if(hit(k)){b.classList.add('gold');gold++}else if(sec>=60)b.classList.add('part');
+    if(k===t)b.classList.add('today');tot+=sec;
+    b.setAttribute('aria-label',d+' '+MONTHS[vm]+', '+fmtShort(sec));
+    if(k<=t)b.onclick=()=>showDay(k);g.appendChild(b)}
+  $('monthSum').innerHTML='<b>'+gold+'</b> gold '+(gold===1?'day':'days')+' · <b>'+fmtShort(tot)+'</b> studied this month';
+}
+function renderAll(){renderTop();renderClock();sessionRows(todayK(),$('todayList'));renderCal();
+  $('startBtn').textContent=S.running?'Pause':'Start';$('startBtn').classList.toggle('running',!!S.running)}
+
+/* ---- sheets ---- */
+let openDay=null;
+function openSheet(html){$('sheet').innerHTML=html;$('scrim').hidden=false}
+function closeSheet(){$('scrim').hidden=true;openDay=null}
+$('scrim').onclick=e=>{if(e.target===$('scrim'))closeSheet()};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
+const hmInputs=(h,m)=>'<div class="hm"><label><input id="inH" type="number" inputmode="numeric" min="0" max="23" value="'+h+'"><span>h</span></label><label><input id="inM" type="number" inputmode="numeric" min="0" max="59" value="'+m+'"><span>min</span></label></div>';
+const readHM=()=>Math.max(0,(parseInt($('inH').value)||0)*60+(parseInt($('inM').value)||0));
+
+function showGoal(){
+  const g=goalFor(todayK());
+  openSheet('<h3>Daily goal</h3><p>Applies from today onward. Past days keep the goal they had.</p>'+hmInputs(Math.floor(g/60),g%60)+
+   '<div class="chips">'+[60,90,120,180,240].map(m=>'<button class="chip" data-m="'+m+'">'+fmtGoal(m)+'</button>').join('')+'</div><button class="primary" id="saveGoal">Save goal</button>');
+  document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{const m=+c.dataset.m;$('inH').value=Math.floor(m/60);$('inM').value=m%60});
+  $('saveGoal').onclick=()=>{const m=readHM();if(m<1){$('inM').focus();return}setGoal(m);closeSheet();lastHit=null;renderAll()};
+}
+function showDay(k){
+  openDay=k;const d=parse(k),sec=liveSec(k),g=goalFor(k);
+  openSheet('<h3>'+(k===todayK()?'Today':DAYS[d.getDay()]+' '+d.getDate()+' '+MONTHS[d.getMonth()])+'</h3>'+
+    '<div class="stat-line">'+fmtShort(sec)+' <span>of '+fmtGoal(g)+(hit(k)?' · goal reached':'')+'</span></div>'+
+    '<div class="list" id="dayList"></div><h2>Add time</h2>'+hmInputs(0,30)+'<button class="primary" id="addBtn">Add to this day</button><button class="secondary" id="closeBtn">Done</button>');
+  sessionRows(k,$('dayList'));
+  $('addBtn').onclick=()=>{const m=readHM();if(m<1)return;addSession(k,{manual:true,at:Date.now(),sec:m*60});save();renderAll();showDay(k)};
+  $('closeBtn').onclick=closeSheet;
+}
+function showBackup(){
+  const code=btoa(unescape(encodeURIComponent(JSON.stringify(S))));
+  openSheet('<h3>Backup &amp; restore</h3><p>Your study history lives only on this phone. Copy this code and keep it in Notes. Paste it back here to restore.</p>'+
+   '<textarea id="bkOut" readonly>'+code+'</textarea><button class="secondary" id="copyBtn">Copy backup code</button>'+
+   '<h2>Restore</h2><textarea id="bkIn" placeholder="Paste a backup code"></textarea><button class="primary" id="restoreBtn">Restore</button><div class="note" id="bkNote"></div>');
+  $('copyBtn').onclick=()=>{navigator.clipboard?.writeText(code).then(()=>$('bkNote').textContent='Copied.',()=>{$('bkOut').select();$('bkNote').textContent='Selected. Copy it from the menu.'})??($('bkOut').select())};
+  $('restoreBtn').onclick=()=>{const b=$('restoreBtn');let o;
+    try{o=JSON.parse(decodeURIComponent(escape(atob($('bkIn').value.trim()))));if(!o.days||!o.goals)throw 0}catch(e){$('bkNote').textContent='That code is not a valid backup. Paste the full code.';return}
+    if(!b.dataset.arm){b.dataset.arm=1;b.textContent='Replace current data?';return}
+    S=o;save();closeSheet();lastHit=null;renderAll()};
+}
+
+/* ---- wake lock ---- */
+let wl=null;
+async function lockOn(){try{wl=await navigator.wakeLock?.request('screen')}catch(e){}}
+function lockOff(){try{wl&&wl.release();wl=null}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){renderAll();if(S.running)lockOn()}});
+
+/* ---- wiring ---- */
+$('startBtn').onclick=()=>{S.running?stop():start();renderAll()};
+$('goalBtn').onclick=showGoal;
+$('addToday').onclick=()=>showDay(todayK());
+$('backupBtn').onclick=showBackup;
+$('prevM').onclick=()=>{vm--;if(vm<0){vm=11;vy--}renderCal()};
+$('nextM').onclick=()=>{vm++;if(vm>11){vm=0;vy++}renderCal()};
+function tab(which){const t=which==='today';$('pageToday').hidden=!t;$('pageCal').hidden=t;$('tabToday').setAttribute('aria-selected',t);$('tabCal').setAttribute('aria-selected',!t);if(!t)renderCal()}
+$('tabToday').onclick=()=>tab('today');$('tabCal').onclick=()=>tab('cal');
+
+let lastDay=todayK();
+setInterval(()=>{if(todayK()!==lastDay){lastDay=todayK();renderAll()}else{renderClock();if(S.running)$('miniN').textContent=streak()}},1000);
+renderAll();
+if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+</script>
+</body>
+</html>
